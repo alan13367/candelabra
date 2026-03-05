@@ -1,10 +1,17 @@
-//! Candelabra - A high-level, framework-agnostic wrapper around candle-core
-//! for desktop GUI applications.
+//! Candelabra - a desktop-friendly wrapper around Candle for
+//! quantized LLaMA-compatible GGUF models.
 //!
 //! This crate provides:
 //! - Async model downloads with progress reporting
 //! - Automatic hardware detection with Metal/CUDA/CPU fallback
 //! - Reusable model/tokenizer state for repeated inference runs
+//! - A small, GUI-friendly API for token streaming and cancellation
+//!
+//! # Scope
+//!
+//! `candelabra` currently targets quantized LLaMA-family GGUF checkpoints.
+//! It is intended to be a focused building block for desktop applications
+//! rather than a general wrapper around every `candle-transformers` model.
 //!
 //! # Example
 //!

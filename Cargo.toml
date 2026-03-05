@@ -2,10 +2,21 @@
 name = "candelabra"
 version = "0.1.0"
 edition = "2021"
-description = "A high-level, framework-agnostic wrapper around candle-core for desktop GUIs"
+description = "Desktop-friendly GGUF LLaMA inference wrapper for Candle and Hugging Face Hub"
 license = "MIT OR Apache-2.0"
-keywords = ["machine-learning", "llm", "candle", "ai"]
+documentation = "https://docs.rs/candelabra"
+homepage = "https://github.com/alan13367/candelabra"
+repository = "https://github.com/alan13367/candelabra"
+readme = "README.md"
+keywords = ["llm", "llama", "gguf", "candle"]
 categories = ["science"]
+include = [
+    "Cargo.toml",
+    "README.md",
+    "LICENSE-APACHE",
+    "LICENSE-MIT",
+    "src/**/*.rs",
+]
 
 [dependencies]
 candle-core = { version = "0.9.2" }
