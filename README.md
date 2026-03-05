@@ -1,7 +1,7 @@
 # candelabra
 
 `candelabra` is a small Rust crate for desktop applications that want to run
-quantized LLaMA-compatible GGUF models with
+quantized GGUF models (LLaMA, Qwen, Phi, Gemma, etc.) with
 [`candle-core`](https://crates.io/crates/candle-core),
 [`candle-transformers`](https://crates.io/crates/candle-transformers), and
 [`hf-hub`](https://crates.io/crates/hf-hub).
@@ -16,13 +16,18 @@ It focuses on the pieces GUI apps usually need:
 
 ## Current Scope
 
-`candelabra` currently supports quantized LLaMA-family GGUF checkpoints.
+`candelabra` natively supports quantized GGUF checkpoints with dynamic architecture detection.
+Supported architectures include:
+- `llama` / `mistral` / `mixtral` / `gemma` / `gemma2`
+- `phi3`
+- `qwen2` (Qwen 2, Qwen 2.5, QwQ)
+- `qwen3` / `qwen3moe`
+- `gemma3`
+- `glm4`
 
 That means the crate is a good fit if you want a lightweight Rust API for local
-desktop inference on models such as SmolLM GGUF variants that load through
-Candle's `quantized_llama` path.
-
-It is not yet a generic wrapper over every `candle-transformers` backend.
+desktop inference on models such as Qwen 2.5 or SmolLM GGUF variants. 
+It abstracts away the `candle_transformers::models` paths into a single unified `Model` block.
 
 ## Installation
 
@@ -41,7 +46,7 @@ use candelabra::{
     load_tokenizer_from_repo,
     run_inference,
     InferenceConfig,
-    LlamaModel,
+    Model,
 };
 use std::sync::{
     Arc,
@@ -50,17 +55,20 @@ use std::sync::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model_path = download_model(
-        "bartowski/SmolLM2-360M-Instruct-GGUF",
-        "SmolLM2-360M-Instruct-Q4_K_M.gguf",
+        "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+        "qwen2.5-0.5b-instruct-q4_k_m.gguf",
     )?;
-    let tokenizer = load_tokenizer_from_repo("HuggingFaceTB/SmolLM2-360M-Instruct")?;
-    let mut model = LlamaModel::load(&model_path)?;
+    let tokenizer = load_tokenizer_from_repo("Qwen/Qwen2.5-0.5B-Instruct")?;
+    let mut model = Model::load(&model_path)?;
     let cancel_token = Arc::new(AtomicBool::new(false));
+
+    let mut config = InferenceConfig::default();
+    config.prompt = "<|im_start|>user\nTell me a story about a helpful robot.<|im_end|>\n<|im_start|>assistant\n".to_string();
 
     let result = run_inference(
         &mut model,
         &tokenizer,
-        &InferenceConfig::default(),
+        &config,
         cancel_token,
         |token| {
             print!("{token}");
@@ -79,8 +87,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - `download_model_with_progress()` and `download_model_with_channel()` emit
   progress updates suitable for UI progress bars.
 - `load_tokenizer_from_repo()` downloads and loads `tokenizer.json`.
-- `LlamaModel::load()` loads a quantized GGUF model onto the best available
-  device.
+- `Model::load()` loads a quantized GGUF model onto the best available
+  device, dynamically instantiating the correct candle architecture base on metadata.
 - `run_inference()` streams generated tokens through a callback.
 - `run_inference_with_channel()` streams generated tokens over a Tokio channel.
 

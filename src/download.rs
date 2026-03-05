@@ -3,16 +3,16 @@
 use crate::CandelabraError;
 use futures::StreamExt;
 use hf_hub::{
-    Cache, Repo,
     api::sync::{ApiBuilder, ApiRepo},
+    Cache, Repo,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
-use tokio::sync::mpsc::Sender;
 use tokenizers::Tokenizer;
+use tokio::sync::mpsc::Sender;
 
 const DEFAULT_REVISION: &str = "main";
 const TOKENIZER_FILENAME: &str = "tokenizer.json";
@@ -222,7 +222,11 @@ async fn fetch_remote_metadata(
         .and_then(|value| value.to_str().ok())
         .filter(|value| !value.trim().is_empty())
         .map(ToOwned::to_owned)
-        .unwrap_or_else(|| repo.info().map(|info| info.sha).unwrap_or_else(|_| DEFAULT_REVISION.to_string()));
+        .unwrap_or_else(|| {
+            repo.info()
+                .map(|info| info.sha)
+                .unwrap_or_else(|_| DEFAULT_REVISION.to_string())
+        });
 
     Ok(RemoteMetadata {
         commit_hash,
@@ -286,11 +290,7 @@ fn percentage(downloaded: u64, total_bytes: u64) -> f32 {
     (downloaded as f32 / total_bytes as f32) * 100.0
 }
 
-fn rolling_speed(
-    samples: &VecDeque<(Instant, u64)>,
-    downloaded: u64,
-    now: Instant,
-) -> f64 {
+fn rolling_speed(samples: &VecDeque<(Instant, u64)>, downloaded: u64, now: Instant) -> f64 {
     if samples.len() < 2 {
         return 0.0;
     }
@@ -354,7 +354,8 @@ mod tests {
         fs::create_dir_all(snapshot_file.parent().expect("snapshot parent"))
             .expect("failed to create snapshot dir");
         fs::write(&snapshot_file, b"model").expect("failed to write snapshot file");
-        cache.model(repo_id.to_string())
+        cache
+            .model(repo_id.to_string())
             .create_ref(commit_hash)
             .expect("failed to create cache ref");
 

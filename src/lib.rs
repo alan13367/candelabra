@@ -1,5 +1,5 @@
 //! Candelabra - a desktop-friendly wrapper around Candle for
-//! quantized LLaMA-compatible GGUF models.
+//! quantized GGUF models (LLaMA, Qwen, Phi, Gemma).
 //!
 //! This crate provides:
 //! - Async model downloads with progress reporting
@@ -9,14 +9,14 @@
 //!
 //! # Scope
 //!
-//! `candelabra` currently targets quantized LLaMA-family GGUF checkpoints.
-//! It is intended to be a focused building block for desktop applications
-//! rather than a general wrapper around every `candle-transformers` model.
+//! `candelabra` supports multi-architecture inference for quantized GGUFs 
+//! dynamically extracting the architecture string (llama, phi3, qwen2, etc)
+//! to invoke the proper `candle-transformers` backend.
 //!
 //! # Example
 //!
 //! ```no_run
-//! use candelabra::{download_model, load_tokenizer_from_repo, LlamaModel, InferenceConfig, run_inference};
+//! use candelabra::{download_model, load_tokenizer_from_repo, Model, InferenceConfig, run_inference};
 //! use std::sync::{Arc, atomic::AtomicBool};
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,7 +25,7 @@
 //!         "SmolLM2-360M-Instruct-Q4_K_M.gguf",
 //!     )?;
 //!     let tokenizer = load_tokenizer_from_repo("HuggingFaceTB/SmolLM2-360M-Instruct")?;
-//!     let mut model = LlamaModel::load(&model_path)?;
+//!     let mut model = Model::load(&model_path)?;
 //!     let cancel_token = Arc::new(AtomicBool::new(false));
 //!     let config = InferenceConfig::default();
 //!
@@ -48,14 +48,14 @@ mod inference;
 mod model;
 
 pub use config::{InferenceConfig, InferenceResult};
-pub use device::{DeviceType, get_best_device, get_device};
+pub use device::{get_best_device, get_device, DeviceType};
 pub use download::{
-    DownloadProgress, check_model_cached, download_model, download_model_with_channel,
-    download_model_with_progress, download_tokenizer, download_tokenizer_with_channel,
-    download_tokenizer_with_progress, load_tokenizer, load_tokenizer_from_repo,
+    check_model_cached, download_model, download_model_with_channel, download_model_with_progress,
+    download_tokenizer, download_tokenizer_with_channel, download_tokenizer_with_progress,
+    load_tokenizer, load_tokenizer_from_repo, DownloadProgress,
 };
 pub use inference::{run_inference, run_inference_with_channel};
-pub use model::LlamaModel;
+pub use model::Model;
 
 /// Error type for all candelabra operations.
 #[derive(Debug, thiserror::Error)]

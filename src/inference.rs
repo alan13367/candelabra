@@ -1,19 +1,19 @@
 //! Token streaming inference with cancellation support.
 
-use crate::{CandelabraError, InferenceConfig, InferenceResult, LlamaModel};
+use crate::{CandelabraError, InferenceConfig, InferenceResult, Model};
 use candle_core::Tensor;
 use candle_transformers::generation::LogitsProcessor;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::mpsc::Sender;
 use tokenizers::Tokenizer;
+use tokio::sync::mpsc::Sender;
 
 const EOS_TOKEN_CANDIDATES: &[&str] = &["<|endoftext|>", "</s>", "<|eot_id|>", "<|end|>"];
 
 /// Runs inference using reusable model and tokenizer state.
 pub fn run_inference<F>(
-    model: &mut LlamaModel,
+    model: &mut Model,
     tokenizer: &Tokenizer,
     config: &InferenceConfig,
     cancel_token: Arc<AtomicBool>,
@@ -83,12 +83,16 @@ where
         let input = Tensor::new(&[next_token], &model.device)
             .map_err(|e| CandelabraError::Inference(format!("Token tensor creation error: {}", e)))?
             .unsqueeze(0)
-            .map_err(|e| CandelabraError::Inference(format!("Token tensor unsqueeze error: {}", e)))?;
+            .map_err(|e| {
+                CandelabraError::Inference(format!("Token tensor unsqueeze error: {}", e))
+            })?;
 
         let generation_logits = model
             .weights
             .forward(&input, all_tokens.len() - 1)
-            .map_err(|e| CandelabraError::Inference(format!("Generation forward pass error: {}", e)))?;
+            .map_err(|e| {
+                CandelabraError::Inference(format!("Generation forward pass error: {}", e))
+            })?;
         current_logits = prepare_logits(generation_logits)?;
     }
 
@@ -104,7 +108,7 @@ where
 
 /// Runs inference and streams tokens over a Tokio channel.
 pub fn run_inference_with_channel(
-    model: &mut LlamaModel,
+    model: &mut Model,
     tokenizer: &Tokenizer,
     config: &InferenceConfig,
     cancel_token: Arc<AtomicBool>,
