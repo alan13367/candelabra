@@ -34,14 +34,14 @@ dirs = "6"
 candle-core = { version = "0.9.2", features = ["metal", "accelerate"] }
 candle-transformers = { version = "0.9.2", features = ["metal"] }
 
-[target.'cfg(all(not(target_os = "macos"), not(docsrs)))'.dependencies]
+[target.'cfg(all(not(target_os = "macos"), not(candelabra_docsrs)))'.dependencies]
 candle-core = { version = "0.9.2", features = ["cuda"] }
 candle-transformers = { version = "0.9.2", features = ["cuda"] }
 
-[target.'cfg(all(not(target_os = "macos"), docsrs))'.dependencies]
+[target.'cfg(all(not(target_os = "macos"), candelabra_docsrs))'.dependencies]
 candle-core = { version = "0.9.2" }
 candle-transformers = { version = "0.9.2" }
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
-cargo-args = ["--config", "build.rustflags=[\"--cfg\", \"docsrs\"]"]
+cargo-args = ["--config", "build.rustflags=[\"--cfg\", \"candelabra_docsrs\"]"]
