@@ -28,8 +28,8 @@ impl std::fmt::Display for DeviceType {
 /// Returns the best available compute device with automatic fallback.
 ///
 /// Priority order:
-/// 1. Metal (macOS) - if available and creation succeeds
-/// 2. CUDA - if available and creation succeeds  
+/// 1. Metal (macOS) - if the `metal` feature is enabled and creation succeeds
+/// 2. CUDA - if the `cuda` feature is enabled and creation succeeds
 /// 3. CPU - always available as fallback
 pub fn get_best_device() -> (Device, DeviceType) {
     #[cfg(target_os = "macos")]

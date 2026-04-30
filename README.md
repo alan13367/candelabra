@@ -10,7 +10,7 @@ It focuses on the pieces GUI apps usually need:
 
 - Hugging Face downloads that respect the local `hf-hub` cache
 - tokenizer loading helpers
-- automatic Metal or CUDA fallback to CPU
+- optional Metal or CUDA device selection with CPU fallback
 - reusable loaded model state
 - token streaming with cancellation support
 
@@ -19,11 +19,20 @@ It focuses on the pieces GUI apps usually need:
 `candelabra` natively supports quantized GGUF checkpoints with dynamic architecture detection.
 Supported architectures include:
 - `llama` / `mistral` / `mixtral` / `gemma` / `gemma2`
+- `phi` / `phi2`
 - `phi3`
 - `qwen2` (Qwen 2, Qwen 2.5, QwQ)
-- `qwen3` / `qwen3moe`
+- `qwen3`
+- `qwen3moe` when the `qwen3-moe` feature is enabled with a Candle build that
+  exposes `models::quantized_qwen3_moe`
 - `gemma3`
 - `glm4`
+- `lfm2` (including current LFM2.5 GGUFs that advertise `lfm2`)
+- `smollm3`
+
+Qwen3.5 GGUFs are detected explicitly, but are not run through the Qwen3
+backend. They use a newer hybrid Gated DeltaNet + attention architecture that
+requires a dedicated Candle backend before candelabra can support them safely.
 
 That means the crate is a good fit if you want a lightweight Rust API for local
 desktop inference on models such as Qwen 2.5 or SmolLM GGUF variants. 
@@ -35,8 +44,30 @@ Add the crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-candelabra = "0.1"
+candelabra = "0.1.4"
 ```
+
+By default, `candelabra` builds CPU-only so library consumers can choose their
+own Candle backend policy. Enable GPU backends explicitly:
+
+```toml
+[dependencies]
+candelabra = { version = "0.1.4", features = ["metal", "accelerate"] } # macOS
+```
+
+```toml
+[dependencies]
+candelabra = { version = "0.1.4", features = ["cuda"] } # NVIDIA CUDA
+```
+
+```toml
+[dependencies]
+candelabra = { version = "0.1.4", features = ["qwen3-moe"] } # optional Qwen3 MoE GGUF backend
+```
+
+Applications that patch Candle, such as to use CUDA dynamic loading, should keep
+the `[patch.crates-io]` entries in the application workspace root and enable the
+matching `candelabra` feature there.
 
 ## Quick Start
 
@@ -88,14 +119,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   progress updates suitable for UI progress bars.
 - `load_tokenizer_from_repo()` downloads and loads `tokenizer.json`.
 - `Model::load()` loads a quantized GGUF model onto the best available
-  device, dynamically instantiating the correct candle architecture base on metadata.
+  device, dynamically instantiating the correct Candle architecture based on metadata.
+- `Model::architecture()` returns the GGUF architecture name reported by the
+  model metadata.
 - `run_inference()` streams generated tokens through a callback.
 - `run_inference_with_channel()` streams generated tokens over a Tokio channel.
 
 ## Platform Notes
 
-- On macOS, the crate prefers Metal and falls back to CPU.
-- On non-macOS platforms, the crate prefers CUDA and falls back to CPU.
+- With the `metal` feature enabled on macOS, the crate prefers Metal and falls
+  back to CPU.
+- With the `cuda` feature enabled on non-macOS platforms, the crate prefers CUDA
+  and falls back to CPU.
+- Without a GPU backend feature, the crate stays CPU-only.
 - The public `device_used` string is intended to be easy to surface directly in
   desktop UIs.
 

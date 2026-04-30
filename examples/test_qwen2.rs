@@ -15,9 +15,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Loaded model on device: {}", model.device_name());
 
     let cancel_token = Arc::new(AtomicBool::new(false));
-    let mut config = InferenceConfig::default();
-    config.prompt = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nWrite a very short poem about algorithms.<|im_end|>\n<|im_start|>assistant\n".to_string();
-    config.max_tokens = 50;
+    let config = InferenceConfig {
+        prompt: "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nWrite a very short poem about algorithms.<|im_end|>\n<|im_start|>assistant\n".to_string(),
+        max_tokens: 50,
+        ..Default::default()
+    };
 
     let result = run_inference(&mut model, &tokenizer, &config, cancel_token, |token| {
         print!("{}", token);

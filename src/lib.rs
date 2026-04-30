@@ -3,13 +3,13 @@
 //!
 //! This crate provides:
 //! - Async model downloads with progress reporting
-//! - Automatic hardware detection with Metal/CUDA/CPU fallback
+//! - Optional Metal/CUDA device selection with CPU fallback
 //! - Reusable model/tokenizer state for repeated inference runs
 //! - A small, GUI-friendly API for token streaming and cancellation
 //!
 //! # Scope
 //!
-//! `candelabra` supports multi-architecture inference for quantized GGUFs 
+//! `candelabra` supports multi-architecture inference for quantized GGUFs
 //! dynamically extracting the architecture string (llama, phi3, qwen2, etc)
 //! to invoke the proper `candle-transformers` backend.
 //!
