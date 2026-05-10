@@ -44,7 +44,7 @@ Add the crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-candelabra = "0.1.4"
+candelabra = "0.1.5"
 ```
 
 By default, `candelabra` builds CPU-only so library consumers can choose their
@@ -52,17 +52,17 @@ own Candle backend policy. Enable GPU backends explicitly:
 
 ```toml
 [dependencies]
-candelabra = { version = "0.1.4", features = ["metal", "accelerate"] } # macOS
+candelabra = { version = "0.1.5", features = ["metal", "accelerate"] } # macOS
 ```
 
 ```toml
 [dependencies]
-candelabra = { version = "0.1.4", features = ["cuda"] } # NVIDIA CUDA
+candelabra = { version = "0.1.5", features = ["cuda"] } # NVIDIA CUDA
 ```
 
 ```toml
 [dependencies]
-candelabra = { version = "0.1.4", features = ["qwen3-moe"] } # optional Qwen3 MoE GGUF backend
+candelabra = { version = "0.1.5", features = ["qwen3-moe"] } # optional Qwen3 MoE GGUF backend
 ```
 
 Applications that patch Candle, such as to use CUDA dynamic loading, should keep

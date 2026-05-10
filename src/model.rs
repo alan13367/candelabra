@@ -1,6 +1,6 @@
 //! Model loading wrapper for GGUF format models.
 
-use crate::device::{device_name, get_best_device};
+use crate::device::{device_name, get_best_device, panic_payload_message};
 use crate::{CandelabraError, DeviceType};
 use candle_core::Tensor;
 use candle_core::{quantized::gguf_file, DType, Device};
@@ -16,6 +16,7 @@ use candle_transformers::models::quantized_qwen3::ModelWeights as Qwen3Weights;
 use candle_transformers::models::quantized_qwen3_moe::GGUFQWenMoE as Qwen3MoeWeights;
 use candle_transformers::models::smol::quantized_smollm3::QuantizedModelForCausalLM as SmolLm3Weights;
 use std::io::{Read, Seek};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::Path;
 
 const SUPPORTED_ARCHITECTURES: &str = "llama, mistral, gemma, gemma2, mixtral, phi2, phi3, qwen2, qwen3, gemma3, glm4, lfm2/LFM2.5, smollm3";
@@ -172,8 +173,47 @@ impl Model {
     ///
     /// A loaded `Model` ready for inference.
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, CandelabraError> {
+        let path = path.as_ref();
         let (device, device_type) = get_best_device();
-        Self::load_with_device(path, device, device_type)
+        match catch_unwind(AssertUnwindSafe(|| {
+            Self::load_with_device(path, device, device_type)
+        })) {
+            Ok(result) => result,
+            Err(panic) if device_type != DeviceType::Cpu => {
+                let message = panic_payload_message(panic.as_ref());
+                eprintln!(
+                    "{} model load panicked, falling back to CPU: {}",
+                    device_type, message
+                );
+                Self::load_cpu_after_accelerator_panic(path, device_type, &message)
+            }
+            Err(panic) => Err(CandelabraError::Model(format!(
+                "CPU model load panicked: {}",
+                panic_payload_message(panic.as_ref())
+            ))),
+        }
+    }
+
+    fn load_cpu_after_accelerator_panic(
+        path: &Path,
+        device_type: DeviceType,
+        accelerator_panic: &str,
+    ) -> Result<Self, CandelabraError> {
+        match catch_unwind(AssertUnwindSafe(|| {
+            Self::load_with_device(path, Device::Cpu, DeviceType::Cpu)
+        })) {
+            Ok(Ok(model)) => Ok(model),
+            Ok(Err(cpu_error)) => Err(CandelabraError::Model(format!(
+                "{} model load panicked ({}); CPU fallback failed: {}",
+                device_type, accelerator_panic, cpu_error
+            ))),
+            Err(cpu_panic) => Err(CandelabraError::Model(format!(
+                "{} model load panicked ({}); CPU fallback also panicked: {}",
+                device_type,
+                accelerator_panic,
+                panic_payload_message(cpu_panic.as_ref())
+            ))),
+        }
     }
 
     /// Load a GGUF model with a specific device.

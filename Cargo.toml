@@ -1,6 +1,6 @@
 [package]
 name = "candelabra"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "Desktop-friendly GGUF LLaMA inference wrapper for Candle and Hugging Face Hub"
 license = "MIT OR Apache-2.0"
