@@ -17,7 +17,7 @@ use candle_transformers::models::quantized_qwen3_moe::GGUFQWenMoE as Qwen3MoeWei
 use candle_transformers::models::smol::quantized_smollm3::QuantizedModelForCausalLM as SmolLm3Weights;
 use std::io::{Read, Seek};
 use std::panic::{catch_unwind, AssertUnwindSafe};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const SUPPORTED_ARCHITECTURES: &str = "llama, mistral, gemma, gemma2, mixtral, phi2, phi3, qwen2, qwen3, gemma3, glm4, lfm2/LFM2.5, smollm3";
 const QWEN35_UNSUPPORTED_REASON: &str = "Qwen3.5 GGUFs use a newer hybrid Gated DeltaNet + attention architecture. candle-transformers 0.9.2 does not expose a quantized Qwen3.5 backend yet, so candelabra cannot safely run these weights until Candle adds that model implementation.";
@@ -157,6 +157,8 @@ pub struct Model {
     device_type: DeviceType,
     /// GGUF architecture name as reported by model metadata.
     architecture: String,
+    /// Original GGUF path, used to rebuild mutable model state between isolated runs.
+    model_path: PathBuf,
 }
 
 impl Model {
@@ -317,6 +319,7 @@ impl Model {
             device,
             device_type,
             architecture,
+            model_path: path.to_path_buf(),
         })
     }
 
@@ -336,10 +339,23 @@ impl Model {
     }
 
     /// Reset any internal state (KV cache, etc.).
-    ///
-    /// Currently a no-op but provided for future extensibility.
     pub fn reset(&mut self) {
-        // Clear any internal KV cache or state here if needed in the future
+        if let Err(error) = self.reset_state() {
+            eprintln!("Failed to reset model state: {error}");
+        }
+    }
+
+    /// Rebuilds the model weights to clear backend-owned KV cache.
+    ///
+    /// Some quantized Candle backends keep cache inside private weight fields
+    /// without exposing a clear method. Reloading preserves the selected device
+    /// while guaranteeing the next inference starts from an empty sequence state.
+    pub fn reset_state(&mut self) -> Result<(), CandelabraError> {
+        let reloaded =
+            Self::load_with_device(&self.model_path, self.device.clone(), self.device_type)?;
+        self.weights = reloaded.weights;
+        self.architecture = reloaded.architecture;
+        Ok(())
     }
 }
 

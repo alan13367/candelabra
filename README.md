@@ -13,6 +13,7 @@ It focuses on the pieces GUI apps usually need:
 - optional Metal or CUDA device selection with CPU fallback
 - reusable loaded model state
 - token streaming with cancellation support
+- optional profiled inference telemetry for benchmark-style callers
 
 ## Current Scope
 
@@ -44,7 +45,7 @@ Add the crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-candelabra = "0.1.5"
+candelabra = "0.2.0"
 ```
 
 By default, `candelabra` builds CPU-only so library consumers can choose their
@@ -52,17 +53,17 @@ own Candle backend policy. Enable GPU backends explicitly:
 
 ```toml
 [dependencies]
-candelabra = { version = "0.1.5", features = ["metal", "accelerate"] } # macOS
+candelabra = { version = "0.2.0", features = ["metal", "accelerate"] } # macOS
 ```
 
 ```toml
 [dependencies]
-candelabra = { version = "0.1.5", features = ["cuda"] } # NVIDIA CUDA
+candelabra = { version = "0.2.0", features = ["cuda"] } # NVIDIA CUDA
 ```
 
 ```toml
 [dependencies]
-candelabra = { version = "0.1.5", features = ["qwen3-moe"] } # optional Qwen3 MoE GGUF backend
+candelabra = { version = "0.2.0", features = ["qwen3-moe"] } # optional Qwen3 MoE GGUF backend
 ```
 
 Applications that patch Candle, such as to use CUDA dynamic loading, should keep
@@ -122,8 +123,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   device, dynamically instantiating the correct Candle architecture based on metadata.
 - `Model::architecture()` returns the GGUF architecture name reported by the
   model metadata.
+- `Model::reset_state()` reloads weights on the selected device to clear backend-owned KV/cache state between isolated runs.
 - `run_inference()` streams generated tokens through a callback.
+- `run_inference_profiled()` returns `ProfiledInferenceResult` with prompt-processing, decode, first-token, callback, and stop-reason telemetry for benchmarks.
 - `run_inference_with_channel()` streams generated tokens over a Tokio channel.
+- `InferenceConfig::stop_on_eos` controls whether generation stops when a common EOS token is sampled; it defaults to `true`.
 
 ## Platform Notes
 

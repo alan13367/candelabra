@@ -47,14 +47,16 @@ mod download;
 mod inference;
 mod model;
 
-pub use config::{InferenceConfig, InferenceResult};
+pub use config::{
+    InferenceConfig, InferenceResult, InferenceTelemetry, ProfiledInferenceResult, StopReason,
+};
 pub use device::{get_best_device, get_device, DeviceType};
 pub use download::{
     check_model_cached, download_model, download_model_with_channel, download_model_with_progress,
     download_tokenizer, download_tokenizer_with_channel, download_tokenizer_with_progress,
     load_tokenizer, load_tokenizer_from_repo, DownloadProgress,
 };
-pub use inference::{run_inference, run_inference_with_channel};
+pub use inference::{run_inference, run_inference_profiled, run_inference_with_channel};
 pub use model::Model;
 
 /// Error type for all candelabra operations.
